@@ -161,7 +161,6 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
                                // Pin the clipping view to the appropriate outer edges of the cell.
                                [NSLayoutConstraint constraintWithItem:clipView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1.0 constant:0.0],
                                [NSLayoutConstraint constraintWithItem:clipView attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0 constant:0.0],
-                               [NSLayoutConstraint constraintWithItem:clipView attribute:alignmentAttribute relatedBy:NSLayoutRelationEqual toItem:self attribute:alignmentAttribute multiplier:1.0 constant:0.0],
                                clipConstraint,
                                ]];
         
@@ -175,6 +174,16 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
                                // Constrain the maximum button width so that at least a button's worth of contentView is left visible. (The button view will shrink accordingly.)
                                [NSLayoutConstraint constraintWithItem:buttonView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationLessThanOrEqual toItem:self.contentView attribute:NSLayoutAttributeWidth multiplier:1.0 constant:-kUtilityButtonWidthDefault],
                                ]];
+    }
+
+    // Pin the clip views to the safe area layout guide
+    if (@available(iOS 11.0, *)) {
+        [NSLayoutConstraint activateConstraints:@[
+                                                  [self.leftUtilityClipView.leftAnchor constraintEqualToSystemSpacingAfterAnchor:self.safeAreaLayoutGuide.leftAnchor multiplier:1.0]
+                                                  ]];
+        [NSLayoutConstraint activateConstraints:@[
+                                                  [self.rightUtilityClipView.rightAnchor constraintEqualToSystemSpacingAfterAnchor:self.safeAreaLayoutGuide.rightAnchor multiplier:1.0]
+                                                  ]];
     }
 }
 
@@ -534,18 +543,18 @@ static NSString * const kTableViewPanState = @"state";
 - (CGFloat)leftUtilityButtonsWidth
 {
 #if CGFLOAT_IS_DOUBLE
-    return round(CGRectGetWidth(self.leftUtilityButtonsView.frame));
+    return round(CGRectGetWidth(self.leftUtilityButtonsView.frame) + self.safeAreaLeftInset + self.safeAreaRightInset);
 #else
-    return roundf(CGRectGetWidth(self.leftUtilityButtonsView.frame));
+    return roundf(CGRectGetWidth(self.leftUtilityButtonsView.frame) + self.safeAreaLeftInset + self.safeAreaRightInset);
 #endif
 }
 
 - (CGFloat)rightUtilityButtonsWidth
 {
 #if CGFLOAT_IS_DOUBLE
-    return round(CGRectGetWidth(self.rightUtilityButtonsView.frame) + self.additionalRightPadding);
+    return round(CGRectGetWidth(self.rightUtilityButtonsView.frame) + self.additionalRightPadding + self.safeAreaLeftInset + self.safeAreaRightInset);
 #else
-    return roundf(CGRectGetWidth(self.rightUtilityButtonsView.frame) + self.additionalRightPadding);
+    return roundf(CGRectGetWidth(self.rightUtilityButtonsView.frame) + self.additionalRightPadding + self.safeAreaLeftInset + self.safeAreaRightInset);
 #endif
 }
 
@@ -556,6 +565,24 @@ static NSString * const kTableViewPanState = @"state";
 #else
     return roundf([self leftUtilityButtonsWidth] + [self rightUtilityButtonsWidth]);
 #endif
+}
+
+- (CGFloat)safeAreaLeftInset
+{
+    if (@available(iOS 11.0, *)) {
+        return self.safeAreaInsets.left;
+    } else {
+        return 0;
+    }
+}
+
+- (CGFloat)safeAreaRightInset
+{
+    if (@available(iOS 11.0, *)) {
+        return self.safeAreaInsets.right;
+    } else {
+        return 0;
+    }
 }
 
 - (CGPoint)contentOffsetForCellState:(SWCellState)state
